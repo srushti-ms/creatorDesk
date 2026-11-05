@@ -21,6 +21,7 @@ export const api = {
   radar: () => request('/api/dashboard/rights-radar'),
   brands: () => request('/api/brands'),
   createBrand: (body) => request('/api/brands', json('POST', body)),
+  updateBrand: (id, body) => request(`/api/brands/${id}`, json('PUT', body)),
   collaborations: () => request('/api/collaborations'),
   createCollaboration: (body) => request('/api/collaborations', json('POST', body)),
   rights: () => request('/api/rights'),

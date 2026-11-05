@@ -42,7 +42,7 @@ export default function App() {
       <div className="page-wrap">
         {page === 'overview' && <Overview refreshKey={refreshKey} navigate={navigate} add={add} search={search} />}
         {page === 'radar' && <Radar refreshKey={refreshKey} search={search} />}
-        {page === 'brands' && <Brands refreshKey={refreshKey} search={search} focusId={focusRecord?.page === page ? focusRecord.id : null} add={() => add('brand')} navigate={navigate} />}
+        {page === 'brands' && <Brands refreshKey={refreshKey} search={search} focusId={focusRecord?.page === page ? focusRecord.id : null} add={() => add('brand')} edit={(brand) => add('brand', brand)} navigate={navigate} />}
         {page === 'collaborations' && <Collaborations refreshKey={refreshKey} search={search} focusId={focusRecord?.page === page ? focusRecord.id : null} add={() => add('collaboration')} />}
         {page === 'rights' && <Rights refreshKey={refreshKey} search={search} focusId={focusRecord?.page === page ? focusRecord.id : null} add={() => add('right')} edit={(r) => add('right', r)} refresh={refresh} notify={notify} />}
         {page === 'exclusivity' && <Exclusivity refreshKey={refreshKey} search={search} focusId={focusRecord?.page === page ? focusRecord.id : null} add={() => add('exclusivity')} refresh={refresh} notify={notify} />}
@@ -78,7 +78,7 @@ function GlobalSearch({ value, onChange, onSelect }) {
         const collabById = Object.fromEntries(collaborations.map((item) => [item.id, item]))
         const match = (...parts) => parts.filter(Boolean).join(' ').toLowerCase().includes(query)
         const found = [
-          ...brands.filter((item) => match(item.name, item.contact_name, item.email, item.industry)).map((item) => ({ type: 'Brand', page: 'brands', filter: item.name, title: item.name, detail: [item.industry, item.contact_name].filter(Boolean).join(' · '), id: item.id })),
+          ...brands.filter((item) => match(item.name, item.contact_name, item.contact_number, item.email, item.industry)).map((item) => ({ type: 'Brand', page: 'brands', filter: item.name, title: item.name, detail: [item.industry, item.contact_name, item.contact_number].filter(Boolean).join(' · '), id: item.id })),
           ...collaborations.filter((item) => match(item.brand_name, item.campaign_name, item.status)).map((item) => ({ type: 'Collaboration', page: 'collaborations', filter: item.campaign_name, title: item.campaign_name, detail: `${item.brand_name || 'Brand'} · ${money(item.deal_amount)}`, id: item.id })),
           ...rights.map((item) => ({ ...item, collaboration: collabById[item.collaboration_id] })).filter((item) => match(item.content_title, item.platform, item.usage_type, item.collaboration?.brand_name, item.collaboration?.campaign_name)).map((item) => ({ type: 'Usage right', page: 'rights', filter: item.content_title, title: item.content_title, detail: [item.collaboration?.brand_name, item.collaboration?.campaign_name, item.platform].filter(Boolean).join(' · '), id: item.id })),
           ...exclusivity.map((item) => ({ ...item, collaboration: collabById[item.collaboration_id] })).filter((item) => match(item.category, item.notes, item.collaboration?.brand_name, item.collaboration?.campaign_name)).map((item) => ({ type: 'Exclusivity', page: 'exclusivity', filter: item.category, title: item.category, detail: [item.collaboration?.brand_name, item.collaboration?.campaign_name, item.end_date ? `Ends ${date(item.end_date)}` : 'No end date'].filter(Boolean).join(' · '), id: item.id })),
@@ -188,11 +188,11 @@ function Radar({ refreshKey, search }) {
 }
 function Select({ label: name, value, onChange, options }) { return <label className="filter-select"><span>{name}</span><select value={value} onChange={(e) => onChange(e.target.value)}><option value="">All</option>{options.map((o) => <option key={o} value={o}>{label(o)}</option>)}</select><ChevronDown size={14} /></label> }
 
-function Brands({ refreshKey, search, focusId, add, navigate }) {
+function Brands({ refreshKey, search, focusId, add, edit, navigate }) {
   const loader = useCallback(() => api.brands(), [])
   const { data, loading, error, reload } = useLoad(loader, refreshKey)
-  const rows = (data || []).filter((r) => `${r.name} ${r.contact_name} ${r.email} ${r.industry}`.toLowerCase().includes(search.toLowerCase()))
-  return <><Heading title="Brands" subtitle="The partners behind your creator business." action={add} actionLabel="Add brand" refresh={reload} loading={loading} /><EmptyPage loading={loading} error={error} retry={reload}>{<section className="panel directory-panel"><div className="directory-heading"><div><h2>Your brand partners</h2><span>{rows.length} brands</span></div><span className="directory-hint"><Search size={14} />Search above to filter</span></div>{rows.length ? <div className="brand-grid">{rows.map((r) => <article className={`brand-card ${String(r.id) === focusId ? 'highlight-record' : ''}`} key={r.id}><div className="brand-card-top"><div className="brand-tile">{r.name.slice(0, 1).toUpperCase()}</div><span className="subtle-label">BRAND PARTNER</span></div><h3>{r.name}</h3><span className="industry-label">{r.industry || 'Industry not set'}</span><div className="brand-card-divider" /><div className="brand-detail"><span>Contact</span><strong>{r.contact_name || '—'}</strong></div><div className="brand-detail"><span>Email</span><strong>{r.email || '—'}</strong></div><button className="brand-card-link" onClick={() => navigate('collaborations')}>View collaborations <ArrowRight size={14} /></button></article>)}</div> : <Empty icon={HeartHandshake} title={search ? 'No matching brands' : 'Your partner list starts here'} text={search ? 'Try a different search.' : 'Add the brands you work with to connect campaigns and content rights.'} action={add} actionLabel="Add a brand" />}</section>}</EmptyPage></>
+  const rows = (data || []).filter((r) => `${r.name} ${r.contact_name} ${r.contact_number} ${r.email} ${r.industry}`.toLowerCase().includes(search.toLowerCase()))
+  return <><Heading title="Brands" subtitle="The partners behind your creator business." action={add} actionLabel="Add brand" refresh={reload} loading={loading} /><EmptyPage loading={loading} error={error} retry={reload}>{<section className="panel directory-panel"><div className="directory-heading"><div><h2>Your brand partners</h2><span>{rows.length} brands</span></div><span className="directory-hint"><Search size={14} />Search above to filter</span></div>{rows.length ? <div className="brand-grid">{rows.map((r) => <article className={`brand-card ${String(r.id) === focusId ? 'highlight-record' : ''}`} key={r.id}><div className="brand-card-top"><div className="brand-tile">{r.name.slice(0, 1).toUpperCase()}</div><span className="subtle-label">BRAND PARTNER</span><button className="icon-button" onClick={() => edit(r)} aria-label={`Edit ${r.name}`} title="Edit brand"><Pencil size={15} /></button></div><h3>{r.name}</h3><span className="industry-label">{r.industry || 'Industry not set'}</span><div className="brand-card-divider" /><div className="brand-detail"><span>Contact</span><strong>{r.contact_name || '—'}</strong></div><div className="brand-detail"><span>Contact number</span><strong>{r.contact_number || '—'}</strong></div><div className="brand-detail"><span>Email</span><strong>{r.email || '—'}</strong></div><button className="brand-card-link" onClick={() => navigate('collaborations')}>View collaborations <ArrowRight size={14} /></button></article>)}</div> : <Empty icon={HeartHandshake} title={search ? 'No matching brands' : 'Your partner list starts here'} text={search ? 'Try a different search.' : 'Add the brands you work with to connect campaigns and content rights.'} action={add} actionLabel="Add a brand" />}</section>}</EmptyPage></>
 }
 
 function Collaborations({ refreshKey, search, focusId, add }) {
@@ -226,7 +226,7 @@ function FormDialog({ kind, record, close, done }) {
   const [brands, setBrands] = useState([]), [collaborations, setCollaborations] = useState([])
   const [loading, setLoading] = useState(kind !== 'brand'), [saving, setSaving] = useState(false), [error, setError] = useState('')
   const [form, setForm] = useState(() => kind === 'brand'
-    ? { name: '', contact_name: '', email: '', industry: '' }
+    ? { name: record?.name || '', contact_name: record?.contact_name || '', contact_number: record?.contact_number || '', email: record?.email || '', industry: record?.industry || '' }
     : kind === 'collaboration' ? { brand_id: '', campaign_name: '', deal_amount: '', start_date: '', end_date: '', status: 'ACTIVE' }
       : kind === 'right' ? { collaboration_id: record?.collaboration_id || '', content_title: record?.content_title || '', platform: record?.platform || '', usage_type: record?.usage_type || 'ORGANIC', start_date: record?.start_date?.slice(0, 10) || '', expiry_date: record?.expiry_date?.slice(0, 10) || '', renewal_fee: record?.renewal_fee ?? '', notes: record?.notes || '' }
         : { collaboration_id: '', category: '', start_date: '', end_date: '', notes: '' })
@@ -252,15 +252,28 @@ function FormDialog({ kind, record, close, done }) {
     if (['deal_amount', 'renewal_fee'].some((field) => form[field] !== '' && Number(form[field]) < 0)) return setError('Amounts cannot be negative.')
     setSaving(true)
     try {
-      if (kind === 'brand') { await api.createBrand(Object.fromEntries(Object.entries(form).filter(([, value]) => value !== ''))); return done('Brand added') }
+      if (kind === 'brand') {
+        if (record) {
+          await api.updateBrand(record.id, {
+            name: form.name.trim(),
+            contact_name: form.contact_name.trim() || null,
+            contact_number: form.contact_number.trim() || null,
+            email: form.email.trim() || null,
+            industry: form.industry.trim() || null,
+          })
+          return done('Brand details updated')
+        }
+        await api.createBrand(Object.fromEntries(Object.entries(form).filter(([, value]) => value !== '')))
+        return done('Brand added')
+      }
       if (kind === 'collaboration') { await api.createCollaboration({ ...form, brand_id: Number(form.brand_id), deal_amount: form.deal_amount === '' ? null : Number(form.deal_amount), start_date: form.start_date || null, end_date: form.end_date || null }); return done('Collaboration added') }
       if (kind === 'right') { const body = { ...form, collaboration_id: Number(form.collaboration_id), start_date: form.start_date || null, expiry_date: form.expiry_date || null, renewal_fee: form.renewal_fee === '' ? null : Number(form.renewal_fee) }; if (record) await api.updateRight(record.id, body); else await api.createRight(body); return done(record ? 'Usage right updated' : 'Usage right added') }
       await api.createExclusivity({ ...form, collaboration_id: Number(form.collaboration_id), start_date: form.start_date || null, end_date: form.end_date || null }); done('Exclusivity agreement added')
     } catch (e) { setError(e.message) } finally { setSaving(false) }
   }
-  const title = kind === 'brand' ? 'Add a brand' : kind === 'collaboration' ? 'New collaboration' : kind === 'right' ? record ? 'Edit usage right' : 'Add usage right' : 'Add exclusivity agreement'
+  const title = kind === 'brand' ? record ? 'Edit brand details' : 'Add a brand' : kind === 'collaboration' ? 'New collaboration' : kind === 'right' ? record ? 'Edit usage right' : 'Add usage right' : 'Add exclusivity agreement'
   const opts = kind === 'collaboration' ? brands : collaborations
-  const fields = kind === 'brand' ? [['name', 'Brand name', 'text', true], ['contact_name', 'Contact name', 'text'], ['email', 'Email address', 'email'], ['industry', 'Industry', 'text']]
+  const fields = kind === 'brand' ? [['name', 'Brand name', 'text', true], ['contact_name', 'Contact name', 'text'], ['contact_number', 'Contact number', 'tel'], ['email', 'Email address', 'email'], ['industry', 'Industry', 'text']]
     : kind === 'collaboration' ? [['brand_id', 'Brand', 'select', true], ['campaign_name', 'Campaign name', 'text', true], ['deal_amount', 'Deal amount (₹)', 'number'], ['start_date', 'Start date', 'date'], ['end_date', 'End date', 'date'], ['status', 'Status', 'status']]
       : kind === 'right' ? [['collaboration_id', 'Collaboration', 'select', true], ['content_title', 'Content title', 'text', true], ['platform', 'Platform', 'text', true], ['usage_type', 'Usage type', 'usage', true], ['start_date', 'Permission starts', 'date'], ['expiry_date', 'Permission expires', 'date'], ['renewal_fee', 'Renewal fee (₹)', 'number'], ['notes', 'Notes', 'textarea']]
         : [['collaboration_id', 'Collaboration', 'select', true], ['category', 'Category', 'text', true], ['start_date', 'Starts on', 'date'], ['end_date', 'Ends on', 'date'], ['notes', 'Notes', 'textarea']]
