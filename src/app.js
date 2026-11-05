@@ -13,9 +13,11 @@ const validFrontendOrigin = (() => {
     return false;
   }
 })();
+const allowedRestOrigins = new Set(['http://localhost:5173']);
+if (validFrontendOrigin) allowedRestOrigins.add(frontendOrigin);
 const restCors = cors({
   origin(origin, callback) {
-    return callback(null, Boolean(validFrontendOrigin && origin === frontendOrigin) ? origin : false);
+    return callback(null, allowedRestOrigins.has(origin) ? origin : false);
   },
   optionsSuccessStatus: 204,
 });
